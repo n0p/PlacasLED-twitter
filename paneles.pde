@@ -1,9 +1,10 @@
+// Pins de salida de los paneles.
 #define CLOCK 7
-#define FLIP 6
 #define ENABLE 5
 #define DATA 3
+#define FLIP 6
 
-void writeBit(uint8_t bitv, int x, int y, uint8_t *dest) {
+static inline void writeBit(uint8_t bitv, int x, int y, uint8_t *dest) {
   uint8_t bytev = dest[y*2+x/8];
   
   bytev |= bitv<<(7-(x%8));
@@ -11,7 +12,7 @@ void writeBit(uint8_t bitv, int x, int y, uint8_t *dest) {
   dest[y*2+x/8] = bytev;
 }
 
-uint8_t readBit(int x, int y, int ancho, int alto, uint8_t *buffer) {
+static inline uint8_t readBit(int x, int y, int ancho, int alto, uint8_t *buffer) {
   uint8_t bytev = buffer[(x+y*ancho)/8];
   
   return (bytev & 0x80>>((x+y*ancho)%8)) != 0;
@@ -48,17 +49,23 @@ void flip()
 {
   digitalWrite(FLIP, HIGH);
   digitalWrite(FLIP, LOW);
+  
+  #ifdef SERIAL_SCREEN
   Serial.print("\n");
+  #endif
 }
 
 void lineaPanel(uint16_t linea) {
   int i,j;
   for (j=0; j<16; j++) {
-    digitalWrite(DATA, (linea&(0x0001<<(15-j))) != 0);
+    digitalWrite(DATA, (linea&(0x0001<<(15-j))) == 0);
     digitalWrite(CLOCK, HIGH);
     digitalWrite(CLOCK, LOW);
+    
+    #ifdef SERIAL_SCREEN
     if (linea&(0x0001<<(15-j))) Serial.print("X");
     else Serial.print(" ");
+    #endif
   }
 }
 

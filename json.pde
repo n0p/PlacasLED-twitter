@@ -1,9 +1,15 @@
+/*
+ * Librería que parsea json "on-line", es decir, sin guardar nada en memoria y sin posibilidad de volver atrás.
+ * Está incompleta, solo funciona para el subconjunto de json necesario para interpretar el json que te
+ * manda el API de búsqueda de twitter. Tampoco maneja bien errores, básicamente asume que el json está bien formado.
+ */
 
 #define WHITESPACE(c) (c == ' ' || c == '\t' || c == '\r' || c == '\n')
 #define NUMBER(c) (c == '-' || c == '.' || (c >= '0' && c <= '9'))
 
-#define WAITAVAILABLE while (!client.available()) if (client.status() == 0) return
-#define WAITAVAILABLER(r) while (!client.available()) if (client.status() == 0) return(r)
+#define WAITAVAILABLE while (!client.available()) { if (client.status() == 0) Serial.println(client.status()); return; }
+#define WAITAVAILABLER(r) while (!client.available()) { if (client.status() == 0) return(r); Serial.println(client.status()); }
+//#define WAITAVAILABLER(r) while(1);
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
@@ -241,7 +247,7 @@ int jsonNextVariable(Client &client, struct json_state &jstate, char *name, int 
   
   char c;
   while (1) {
-    WAITAVAILABLE(1);
+    WAITAVAILABLER(1);
     c = client.read();
     if (WHITESPACE(c)) {
       continue;
@@ -397,5 +403,78 @@ void jsonGetString(Client &client, struct json_state &jstate, char *string, int 
     }
   }
   if (string != NULL) string[i] = '\0';
+}
+
+int64_t pow_64(int a, int b) {
+  int64_t retval = 1;
+  
+  while (b > 0) {
+    retval *= a;
+    b--;
+  }
+  
+  return retval;
+}
+
+int64_t atoi_64(const char *buffer)
+{
+  int negative = 0;
+  int i = 0;
+  if (buffer[0] == '-') {
+    negative = 1;
+    i++;
+  }
+  
+  int64_t retval = 0;
+
+  while (buffer[i] != 0) {
+    i++;
+  }
+  
+  int size = i - 1;
+  i = negative;
+  
+  while (buffer[i] != 0) {
+    retval += (buffer[i] - '0') * pow_64(10, size);
+    i++;
+    size--;
+  }
+  
+  return negative ? -retval : retval;
+}
+
+int64_t jsonGetInteger(Client &client, struct json_state &jstate)
+{
+  char c;
+  char buffer[20];
+  int i = 0;
+  
+  if (jstate.state != JSON_STATE_INNUMBER) {
+    while (1) {
+      WAITAVAILABLER(0);
+      c = client.read();
+      if (NUMBER(c))
+        break;
+    }
+    buffer[0] = c;
+    i++;
+  }
+  
+  jstate.state = JSON_STATE_CLEAN;
+
+  while (1) {
+    WAITAVAILABLER(0);
+    c = client.read();
+    buffer[i] = c;
+    
+    if (c < '0' || c > '9' || i == 19) {
+      buffer[i] = 0;
+      break;
+    }
+    
+    i++;
+  }
+  
+  return atoi_64(buffer);
 }
 

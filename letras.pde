@@ -17,6 +17,10 @@ uint32_t chendianl(uint32_t data) {
   return ret;
 }
 
+// Maravillosa funcion de error. Simplemente manda un mensaje por el puerto serie
+// y se queda parpadeando el led de la placa de arduino indefinidamente.
+// Si el programa se queda colgado y el led parpadea, es que ha habido un error
+// leyendo la tarjeta SD.
 void error_P(const char* str) {
   PgmPrint("error: ");
   SerialPrintln_P(str);
@@ -43,7 +47,7 @@ void setupFuente() {
   if (!volume.init(&card)) error("volume.init failed");
   // open the root directory
   if (!root.openRoot(&volume)) error("openRoot failed");
-  if (!fuente.open(&root, "LETRAS.BMF", O_READ)) error("Las letras!!");;
+  if (!fuente.open(&root, "LETRAS.BMF", O_READ)) error("Error abriendo el fichero de fuente.");;
 }
 
 void getLetra(uint8_t letra, uint8_t *buffer, int *_ancho, int *_alto, int *_margeni, int *_margend) {
